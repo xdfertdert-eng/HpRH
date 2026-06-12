@@ -1,21 +1,20 @@
 // Programa HP Prime para Hidrología y Drenaje
-// Métodos: Kirpich, IILA, Racional, Manning
-EXPORT KIRPICH_F(L_in, S_in)
+EXPORT KIRPICH_F(Lon_in, Pen_in)
 BEGIN
-  LOCAL L, S, tc;
-  L := 1000;
-  S := 0.01;
-  tc := 0;
+  LOCAL LonG, PenD, t_conc;
+  LonG := 1000;
+  PenD := 0.01;
+  t_conc := 0;
   
-  IF L_in > 0 THEN L:=L_in; END;
-  IF S_in > 0 THEN S:=S_in; END;
+  IF Lon_in > 0 THEN LonG:=Lon_in; END;
+  IF Pen_in > 0 THEN PenD:=Pen_in; END;
   
-  INPUT({L, S}, "Datos Kirpich", {"L (m):", "S (m/m):"});
+  INPUT({LonG, PenD}, "Datos Kirpich", {"L (m):", "S (m/m):"});
   
-  tc := 0.01947 * L^0.77 * S^-0.385;
+  t_conc := 0.01947 * LonG^0.77 * PenD^-0.385;
   
-  MSGBOX("Tiempo Concentración (tc): " + ROUND(tc, 4) + " min\nEn horas: " + ROUND(tc/60, 4) + " hr");
-  RETURN tc;
+  MSGBOX("Tiempo Concentración (tc): " + ROUND(t_conc, 4) + " min\nEn horas: " + ROUND(t_conc/60, 4) + " hr");
+  RETURN t_conc;
 END;
 EXPORT IILA_F(tc_horas_in)
 BEGIN
@@ -40,24 +39,24 @@ BEGIN
 END;
 EXPORT RACIONAL_F(I_in)
 BEGIN
-  LOCAL C_v, I_val, A_v, Q_v;
-  C_v := 0.5; I_val := 50; A_v := 1; Q_v := 0;
+  LOCAL C_v, I_val, Area_v, Q_v;
+  C_v := 0.5; I_val := 50; Area_v := 1; Q_v := 0;
   
   IF I_in > 0 THEN I_val := I_in; END;
   
-  INPUT({C_v, I_val, A_v}, "Datos Racional", {"Coef. C:", "I (mm/hr):", "Área (km2):"});
+  INPUT({C_v, I_val, Area_v}, "Datos Racional", {"Coef. C:", "I (mm/hr):", "Área (km2):"});
   
-  Q_v := (C_v * I_val * A_v) / 3.6;
+  Q_v := (C_v * I_val * Area_v) / 3.6;
   MSGBOX("Caudal Diseño (Q): " + ROUND(Q_v, 4) + " m3/s");
   RETURN Q_v;
 END;
 EXPORT MANNING_F(Q_in)
 BEGIN
-  LOCAL opc, n_rug, S_pen, b_base, Z_talud, D_diam, y_tirante, Q_man, A, P, Rh;
-  LOCAL iter_count, old_HAngle, Q_diseno, r, h_val, theta;
+  LOCAL opc, n_rug, S_pen, b_base, Z_talud, D_diam, y_tirante, Q_man;
+  LOCAL AreaV, PerimV, RadH, iter_count, old_HAngle, Q_diseno, radio_v, h_val, theta_v;
   
   n_rug:=0.015; S_pen:=0.001; b_base:=1; Z_talud:=1; D_diam:=1; y_tirante:=0.10; 
-  Q_man:=0; A:=0; P:=0; Rh:=0; iter_count:=0;
+  Q_man:=0; AreaV:=0; PerimV:=0; RadH:=0; iter_count:=0;
   
   old_HAngle := HAngle; 
   HAngle := 1;
@@ -82,32 +81,32 @@ BEGIN
   
   REPEAT
      IF opc == 1 THEN
-        A := b_base * y_tirante;
-        P := b_base + 2 * y_tirante;
+        AreaV := b_base * y_tirante;
+        PerimV := b_base + 2 * y_tirante;
      END;
      IF opc == 2 THEN
-        A := (b_base + Z_talud * y_tirante) * y_tirante;
-        P := b_base + 2 * y_tirante * SQRT(1 + Z_talud^2);
+        AreaV := (b_base + Z_talud * y_tirante) * y_tirante;
+        PerimV := b_base + 2 * y_tirante * SQRT(1 + Z_talud^2);
      END;
      IF opc == 3 THEN
-        A := Z_talud * y_tirante^2;
-        P := 2 * y_tirante * SQRT(1 + Z_talud^2);
+        AreaV := Z_talud * y_tirante^2;
+        PerimV := 2 * y_tirante * SQRT(1 + Z_talud^2);
      END;
      IF opc == 4 THEN
         IF y_tirante >= D_diam THEN
-           A := (3.14159265 * D_diam^2) / 4;
-           P := 3.14159265 * D_diam;
+           AreaV := (3.14159265 * D_diam^2) / 4;
+           PerimV := 3.14159265 * D_diam;
         ELSE
-           r := D_diam / 2;
-           h_val := r - y_tirante;
-           theta := 2 * ACOS(h_val/r);
-           A := (r^2/2) * (theta - SIN(theta));
-           P := r * theta;
+           radio_v := D_diam / 2;
+           h_val := radio_v - y_tirante;
+           theta_v := 2 * ACOS(h_val/radio_v);
+           AreaV := (radio_v^2/2) * (theta_v - SIN(theta_v));
+           PerimV := radio_v * theta_v;
         END;
      END;
      
-     Rh := A / P;
-     Q_man := (1 / n_rug) * A * Rh^(2/3) * SQRT(S_pen);
+     RadH := AreaV / PerimV;
+     Q_man := (1 / n_rug) * AreaV * RadH^(2/3) * SQRT(S_pen);
      
      IF Q_man < Q_diseno THEN
         y_tirante := y_tirante + 0.05;
@@ -130,13 +129,13 @@ BEGIN
 END;
 EXPORT INTEGRADO_F()
 BEGIN
-  LOCAL tc, I_val, Q_val, y_val;
+  LOCAL t_conc, I_val, Q_val, y_val;
   
   MSGBOX("--- PASO 1: KIRPICH ---");
-  tc := KIRPICH_F(0, 0);
+  t_conc := KIRPICH_F(0, 0);
   
   MSGBOX("--- PASO 2: IILA ---");
-  I_val := IILA_F(tc/60);
+  I_val := IILA_F(t_conc/60);
   
   MSGBOX("--- PASO 3: RACIONAL ---");
   Q_val := RACIONAL_F(I_val);
