@@ -1,1 +1,61 @@
-Procedimiento de Cálculo Paso a Paso para Dimensionar un Canal
+# Guía Técnica: Diseño y Dimensionamiento de Canales y Cunetas
+
+El diseño y dimensionamiento de un canal o cuneta es un proceso iterativo fundamentado en los principios de la hidráulica de canales abiertos operando bajo un régimen uniforme [1]. A continuación, se detallan los tipos de secciones, parámetros hidráulicos y el procedimiento de cálculo paso a paso.
+
+## 1. Tipos de Canales y Criterios de Selección
+
+La forma geométrica de la sección transversal depende de las restricciones de espacio, el caudal de diseño, la topografía y el tipo de material del terreno [1, 2]:
+
+*   **Sección Triangular o en "V":** Es la forma más utilizada para el drenaje superficial a los costados de las vías (cunetas) [1, 2]. Su geometría permite que uno de sus lados coincida con el borde del pavimento, facilitando la seguridad vial y el ahorro de espacio.
+*   **Sección Rectangular:** Se utiliza estrictamente cuando existen limitaciones severas de espacio [2]. Requiere revestimiento estructural (generalmente concreto) para soportar el empuje del terreno.
+*   **Sección Trapezoidal:** Es la más eficiente para transportar caudales de gran magnitud [2]. Se emplea en zonas rurales o canales principales, ya que sus paredes inclinadas proporcionan mayor estabilidad a los taludes naturales.
+*   **Secciones Segmentales o Parabólicas:** Se aplican para optimizar el flujo frente a caudales variables y para evitar la acumulación de sólidos [2].
+
+## 2. Parámetros Hidráulicos Básicos
+
+Para dimensionar un canal, es fundamental definir su geometría en contacto con el agua [2, 3]:
+
+*   **Tirante de agua ($H$ o $Y$):** Profundidad vertical del agua desde el fondo del canal hasta la superficie libre.
+*   **Área Hidráulica ($A$):** Área transversal del flujo de agua.
+*   **Perímetro Mojado ($P$):** Longitud de la línea de contacto entre el agua y las paredes/fondo del canal.
+*   **Radio Hidráulico ($R_h$):** Relación entre el área y el perímetro mojado ($R_h = A / P$).
+
+## 3. Procedimiento de Cálculo Paso a Paso
+
+El objetivo es encontrar dimensiones que garanticen que el canal transporte el agua de lluvia sin desbordarse y sin erosionar sus paredes [4, 5].
+
+### Paso 1: Determinar el Caudal de Aporte ($Q_{aporte}$)
+Es el volumen de agua crítico esperado. Para cuencas pequeñas, se utiliza la fórmula del Método Racional [6]:
+
+$$Q_{aporte} = \frac{C \cdot I \cdot A}{3.6}$$
+
+*(Donde $C$ es el coeficiente de escorrentía, $I$ la intensidad en mm/hr y $A$ el área en km²).*
+
+### Paso 2: Elección de Pendiente ($S$) y Rugosidad ($n$)
+*   **Pendiente Longitudinal ($S$):** Se adapta a la topografía del terreno, medida en m/m [3].
+*   **Coeficiente de Manning ($n$):** Depende del material. Ejemplos típicos: Concreto afinado ($0.012 - 0.015$), Tierra excavada nueva ($0.016 - 0.022$), Canales con maleza tupida ($0.050 - 0.120$) [7, 8].
+
+### Paso 3: Asumir una Geometría Inicial (Iteración 1)
+Proponer dimensiones de inicio (ej. ancho de solera $b$, talud $Z$) y un **tirante de prueba ($H$)** [5]. Se debe conservar un margen de seguridad o borde libre.
+
+### Paso 4: Calcular las Propiedades Geométricas
+Con el tirante $H$ asumido, se calculan $A$, $P$ y $R_h$ basándose en las fórmulas geométricas de la sección elegida [2].
+
+### Paso 5: Calcular la Capacidad del Canal ($Q_{manning}$)
+Aplicar la ecuación de Manning para determinar el caudal que la sección propuesta es capaz de transportar [9]:
+
+$$V = \frac{R_h^{2/3} \cdot S^{1/2}}{n}$$
+
+$$Q_{manning} = A \cdot V$$
+
+### Paso 6: Verificación de la Capacidad
+Comparar la capacidad del canal ($Q_{manning}$) con el caudal de aporte ($Q_{aporte}$) [5]:
+*   **Si $Q_{manning} < Q_{aporte}$:** El canal se desbordará. Volver al Paso 3, aumentar dimensiones (ej. el tirante $H$ o ancho $b$) y recalcular.
+*   **Si $Q_{manning} \ge Q_{aporte}$:** La capacidad es estructuralmente adecuada.
+
+### Paso 7: Verificación de Velocidades Admisibles
+La velocidad del flujo ($V$) debe encontrarse en un rango seguro para evitar sedimentación o erosión [10]:
+*   **Velocidad Máxima (Erosión):** Para arena arcillosa ($0.60 - 0.90 \text{ m/s}$), mampostería ($3.0 - 4.5 \text{ m/s}$), concreto ($4.50 - 6.00 \text{ m/s}$) [10].
+*   **Velocidad Mínima (Sedimentación):** Generalmente se exige un mínimo de $0.25 - 0.30 \text{ m/s}$ para evitar que los sólidos se asienten.
+
+> **Nota Final:** Una vez que la geometría cumple con la capacidad de transporte requerida y sus velocidades están en el rango admisible, el diseño hidráulico se considera finalizado y validado [5, 11].
