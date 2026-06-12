@@ -1,0 +1,160 @@
+// Programa HP Prime para Hidrología y Drenaje
+// Métodos: Kirpich, IILA, Racional, Manning
+EXPORT KIRPICH_F(L_in, S_in)
+BEGIN
+  LOCAL L, S, tc;
+  L := 1000;
+  S := 0.01;
+  tc := 0;
+  
+  IF L_in > 0 THEN L:=L_in; END;
+  IF S_in > 0 THEN S:=S_in; END;
+  
+  INPUT({L, S}, "Datos Kirpich", {"L (m):", "S (m/m):"});
+  
+  tc := 0.01947 * L^0.77 * S^-0.385;
+  
+  MSGBOX("Tiempo Concentración (tc): " + ROUND(tc, 4) + " min\nEn horas: " + ROUND(tc/60, 4) + " hr");
+  RETURN tc;
+END;
+EXPORT IILA_F(tc_horas_in)
+BEGIN
+  LOCAL a_v, b_v, K_v, n_v, T_v, t_v, I_v;
+  a_v := 1; b_v := 1; K_v := 1; n_v := 1; T_v := 25; t_v := 0; I_v := 0;
+  
+  t_v := tc_horas_in;
+  IF t_v == 0 THEN t_v := 1; END;
+  
+  INPUT(t_v, "Confirmar tc", "tc (horas):", "Duración de la lluvia en horas");
+  
+  INPUT({a_v, b_v, K_v, n_v, T_v}, "Constantes IILA", {"a:", "b:", "K:", "n:", "T (años):"});
+  
+  IF t_v >= 3 THEN
+     I_v := a_v * (1 + K_v * LOG(T_v)) * t_v^(n_v - 1);
+  ELSE
+     I_v := a_v * (1 + K_v * LOG(T_v)) * (t_v + b_v)^(n_v - 1);
+  END;
+  
+  MSGBOX("Intensidad (I): " + ROUND(I_v, 4) + " mm/hr");
+  RETURN I_v;
+END;
+EXPORT RACIONAL_F(I_in)
+BEGIN
+  LOCAL C_v, I_val, A_v, Q_v;
+  C_v := 0.5; I_val := 50; A_v := 1; Q_v := 0;
+  
+  IF I_in > 0 THEN I_val := I_in; END;
+  
+  INPUT({C_v, I_val, A_v}, "Datos Racional", {"Coef. C:", "I (mm/hr):", "Área (km2):"});
+  
+  Q_v := (C_v * I_val * A_v) / 3.6;
+  MSGBOX("Caudal Diseño (Q): " + ROUND(Q_v, 4) + " m3/s");
+  RETURN Q_v;
+END;
+EXPORT MANNING_F(Q_in)
+BEGIN
+  LOCAL opc, n_rug, S_pen, b_base, Z_talud, D_diam, y_tirante, Q_man, A, P, Rh;
+  LOCAL iter_count, old_HAngle, Q_diseno, r, h_val, theta;
+  
+  n_rug:=0.015; S_pen:=0.001; b_base:=1; Z_talud:=1; D_diam:=1; y_tirante:=0.10; 
+  Q_man:=0; A:=0; P:=0; Rh:=0; iter_count:=0;
+  
+  old_HAngle := HAngle; 
+  HAngle := 1;
+  
+  Q_diseno := 5;
+  IF Q_in > 0 THEN Q_diseno := Q_in; END;
+  
+  CHOOSE(opc, "Tipo de Canal", "1. Rectangular", "2. Trapezoidal", "3. Triangular", "4. Circular");
+  
+  IF opc == 1 THEN
+     INPUT({Q_diseno, n_rug, S_pen, b_base, y_tirante}, "Rectangular", {"Q diseño (m3/s):", "n Manning:", "Pendiente S:", "Base b (m):", "Tirante ini y (m):"});
+  END;
+  IF opc == 2 THEN
+     INPUT({Q_diseno, n_rug, S_pen, b_base, Z_talud, y_tirante}, "Trapezoidal", {"Q diseño (m3/s):", "n Manning:", "Pendiente S:", "Base b (m):", "Talud Z:", "Tirante ini y (m):"});
+  END;
+  IF opc == 3 THEN
+     INPUT({Q_diseno, n_rug, S_pen, Z_talud, y_tirante}, "Triangular", {"Q diseño (m3/s):", "n Manning:", "Pendiente S:", "Talud Z:", "Tirante ini y (m):"});
+  END;
+  IF opc == 4 THEN
+     INPUT({Q_diseno, n_rug, S_pen, D_diam, y_tirante}, "Circular", {"Q diseño (m3/s):", "n Manning:", "Pendiente S:", "Diámetro D (m):", "Tirante ini y (m):"});
+  END;
+  
+  REPEAT
+     IF opc == 1 THEN
+        A := b_base * y_tirante;
+        P := b_base + 2 * y_tirante;
+     END;
+     IF opc == 2 THEN
+        A := (b_base + Z_talud * y_tirante) * y_tirante;
+        P := b_base + 2 * y_tirante * SQRT(1 + Z_talud^2);
+     END;
+     IF opc == 3 THEN
+        A := Z_talud * y_tirante^2;
+        P := 2 * y_tirante * SQRT(1 + Z_talud^2);
+     END;
+     IF opc == 4 THEN
+        IF y_tirante >= D_diam THEN
+           A := (3.14159265 * D_diam^2) / 4;
+           P := 3.14159265 * D_diam;
+        ELSE
+           r := D_diam / 2;
+           h_val := r - y_tirante;
+           theta := 2 * ACOS(h_val/r);
+           A := (r^2/2) * (theta - SIN(theta));
+           P := r * theta;
+        END;
+     END;
+     
+     Rh := A / P;
+     Q_man := (1 / n_rug) * A * Rh^(2/3) * SQRT(S_pen);
+     
+     IF Q_man < Q_diseno THEN
+        y_tirante := y_tirante + 0.05;
+        iter_count := iter_count + 1;
+     END;
+     
+     IF iter_count > 200 THEN
+        MSGBOX("Límite de iteraciones excedido. Revisa las dimensiones.");
+        HAngle := old_HAngle;
+        RETURN y_tirante;
+     END;
+     
+  UNTIL Q_man >= Q_diseno;
+  
+  HAngle := old_HAngle;
+  
+  MSGBOX("Diseño de Canal Aprobado!\nTirante final (y): " + ROUND(y_tirante, 3) + " m\nQ canal: " + ROUND(Q_man, 4) + " m3/s\n(Q diseño: " + ROUND(Q_diseno, 4) + ")");
+         
+  RETURN y_tirante;
+END;
+EXPORT INTEGRADO_F()
+BEGIN
+  LOCAL tc, I_val, Q_val, y_val;
+  
+  MSGBOX("--- PASO 1: KIRPICH ---");
+  tc := KIRPICH_F(0, 0);
+  
+  MSGBOX("--- PASO 2: IILA ---");
+  I_val := IILA_F(tc/60);
+  
+  MSGBOX("--- PASO 3: RACIONAL ---");
+  Q_val := RACIONAL_F(I_val);
+  
+  MSGBOX("--- PASO 4: MANNING ---");
+  y_val := MANNING_F(Q_val);
+  
+  MSGBOX("Cálculo Integrado Terminado Exitosamente.");
+END;
+EXPORT HidroRH()
+BEGIN
+  LOCAL opc;
+  REPEAT
+    CHOOSE(opc, "Menú Hidrología", "1. Kirpich (tc)", "2. IILA (Intensidad)", "3. Racional (Caudal)", "4. Manning (Canal)", "5. Flujo Integrado", "6. Salir");
+    IF opc == 1 THEN KIRPICH_F(0, 0); END;
+    IF opc == 2 THEN IILA_F(0); END;
+    IF opc == 3 THEN RACIONAL_F(0); END;
+    IF opc == 4 THEN MANNING_F(0); END;
+    IF opc == 5 THEN INTEGRADO_F(); END;
+  UNTIL opc == 6 OR opc == 0;
+END;
