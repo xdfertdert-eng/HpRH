@@ -2,7 +2,10 @@
 // Permite iterar manualmente las dimensiones de un canal hasta que Qman > Qdiseno
 EXPORT ManningInter()
 BEGIN
-  LOCAL opc, n_rug, S_pen, b_base, Z_talud, D_diam, y_tirante, Q_man, AreaV, PerimV, RadH, Q_diseno, radio_v, h_val, theta_v, accion, msg, old_HAngle, Vel_v;
+  LOCAL opc, n_rug, S_pen, b_base, Z_talud, D_diam;
+  LOCAL y_tirante, Q_man, AreaV, PerimV, RadH, Q_diseno;
+  LOCAL radio_v, h_val, theta_v, accion, msg;
+  LOCAL old_HAngle, Vel_v;
   
   n_rug:=0.015; S_pen:=0.001; b_base:=1; Z_talud:=1; D_diam:=1; y_tirante:=0.10; Q_diseno:=5;
   
