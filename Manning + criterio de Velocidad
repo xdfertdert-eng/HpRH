@@ -1,0 +1,80 @@
+// Programa HP Prime: Manning Interactivo
+// Permite iterar manualmente las dimensiones de un canal hasta que Qman > Qdiseno
+EXPORT ManningInter()
+BEGIN
+  LOCAL opc, n_rug, S_pen, b_base, Z_talud, D_diam, y_tirante, Q_man, AreaV, PerimV, RadH, Q_diseno, radio_v, h_val, theta_v, accion, msg, old_HAngle, Vel_v;
+  
+  n_rug:=0.015; S_pen:=0.001; b_base:=1; Z_talud:=1; D_diam:=1; y_tirante:=0.10; Q_diseno:=5;
+  
+  old_HAngle := HAngle; 
+  HAngle := 1;
+  
+  CHOOSE(opc, "Tipo de Canal", "1. Rectangular", "2. Trapezoidal", "3. Triangular", "4. Circular");
+  
+  IF opc == 1 THEN
+     INPUT({Q_diseno, n_rug, S_pen, b_base, y_tirante}, "Datos Iniciales", {"Q diseno:", "n Manning:", "Pendiente S:", "Base b (m):", "Tirante y (m):"});
+  END;
+  IF opc == 2 THEN
+     INPUT({Q_diseno, n_rug, S_pen, b_base, Z_talud, y_tirante}, "Datos Iniciales", {"Q diseno:", "n Manning:", "Pendiente S:", "Base b (m):", "Talud Z:", "Tirante y (m):"});
+  END;
+  IF opc == 3 THEN
+     INPUT({Q_diseno, n_rug, S_pen, Z_talud, y_tirante}, "Datos Iniciales", {"Q diseno:", "n Manning:", "Pendiente S:", "Talud Z:", "Tirante y (m):"});
+  END;
+  IF opc == 4 THEN
+     INPUT({Q_diseno, n_rug, S_pen, D_diam, y_tirante}, "Datos Iniciales", {"Q diseno:", "n Manning:", "Pendiente S:", "Diametro D (m):", "Tirante y (m):"});
+  END;
+  
+  REPEAT
+     IF opc == 1 THEN
+        AreaV := b_base * y_tirante;
+        PerimV := b_base + 2 * y_tirante;
+     END;
+     IF opc == 2 THEN
+        AreaV := (b_base + Z_talud * y_tirante) * y_tirante;
+        PerimV := b_base + 2 * y_tirante * SQRT(1 + Z_talud^2);
+     END;
+     IF opc == 3 THEN
+        AreaV := Z_talud * y_tirante^2;
+        PerimV := 2 * y_tirante * SQRT(1 + Z_talud^2);
+     END;
+     IF opc == 4 THEN
+        IF y_tirante >= D_diam THEN
+           AreaV := (3.14159265 * D_diam^2) / 4;
+           PerimV := 3.14159265 * D_diam;
+        ELSE
+           radio_v := D_diam / 2;
+           h_val := radio_v - y_tirante;
+           theta_v := 2 * ACOS(h_val/radio_v);
+           AreaV := (radio_v^2/2) * (theta_v - SIN(theta_v));
+           PerimV := radio_v * theta_v;
+        END;
+     END;
+     
+     RadH := AreaV / PerimV;
+     Q_man := (1 / n_rug) * AreaV * RadH^(2/3) * SQRT(S_pen);
+     Vel_v := Q_man / AreaV;
+     
+     msg := "Q diseno: " + ROUND(Q_diseno, 4) + "\nQ canal: " + ROUND(Q_man, 4) + "\nVelocidad: " + ROUND(Vel_v, 3) + " m/s\n\n";
+     IF Q_man >= Q_diseno THEN
+        msg := msg + "¡CUMPLE! El canal soporta el caudal.";
+     ELSE
+        msg := msg + "NO CUMPLE. Capacidad insuficiente.";
+     END;
+     
+     MSGBOX(msg);
+     
+     CHOOSE(accion, "Menu de Accion", "1. Cambiar dimensiones", "2. Finalizar y aceptar");
+     
+     IF accion == 1 THEN
+        IF opc == 1 THEN INPUT({b_base, y_tirante}, "Nuevas Dimensiones", {"Base b (m):", "Tirante y (m):"}); END;
+        IF opc == 2 THEN INPUT({b_base, Z_talud, y_tirante}, "Nuevas Dimensiones", {"Base b (m):", "Talud Z:", "Tirante y (m):"}); END;
+        IF opc == 3 THEN INPUT({Z_talud, y_tirante}, "Nuevas Dimensiones", {"Talud Z:", "Tirante y (m):"}); END;
+        IF opc == 4 THEN INPUT({D_diam, y_tirante}, "Nuevas Dimensiones", {"Diametro D (m):", "Tirante y (m):"}); END;
+     END;
+     
+  UNTIL accion == 2 OR accion == 0;
+  
+  HAngle := old_HAngle;
+  
+  MSGBOX("Diseno Finalizado\nTirante final: " + ROUND(y_tirante, 4) + " m\nVelocidad: " + ROUND(Vel_v, 3) + " m/s");
+END;
