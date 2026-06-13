@@ -1,0 +1,62 @@
+EXPORT DemandaH2O()
+BEGIN
+  // ---------------------------------------------------------
+  // PROGRAMA: DEMANDA DE AGUA PARA RIEGO
+  // Calcula la demanda volumetrica usando el metodo mostrado
+  // en la hoja de Excel.
+  // ---------------------------------------------------------
+  LOCAL dias_mes := {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  
+  // Variables Meteorologicas (Ejemplo de Enero a Diciembre)
+  LOCAL T := {26.6, 27.6, 27.4, 26.5, 26.4, 26.7, 26.7, 30.9, 31.0, 30.5, 20.6, 28.8};
+  LOCAL W := {5.5, 4.5, 3.4, 4.3, 3.7, 3.3, 4.1, 4.8, 4.9, 3.7, 3.8, 3.4};
+  LOCAL H := {75.6, 70.7, 65.9, 67.9, 72.1, 73.4, 67.8, 75.9, 77.8, 62.9, 83.2, 80.5};
+  LOCAL S := {8.2, 8.5, 8.2, 7.5, 6.0, 5.5, 5.5, 6.2, 7.0, 7.8, 8.2, 8.3};
+  LOCAL Pef := {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // Precipitacion efectiva
+  LOCAL Rt := {16.19, 16.19, 15.7, 14.57, 13.27, 12.55, 12.86, 14.02, 15.3, 16.07, 16.22, 16.15};
+  
+  // Altitud
+  LOCAL Elev := 100;
+  LOCAL CE := 0.97 + 0.03 * (Elev / 305);
+  
+  // Factores climaticos calculados mes a mes
+  LOCAL CTT_list := {};
+  LOCAL CWT_list := {};
+  LOCAL CHT_list := {};
+  LOCAL CST_list := {};
+  
+  LOCAL i;
+  FOR i FROM 1 TO 12 DO
+    CTT_list(i) := 0.463 + 0.425 * (T(i)/20) + 0.112 * (T(i)/20)^2;
+    CWT_list(i) := 0.672 + 0.406 * (W(i)/6.7) - 0.078 * (W(i)/6.7)^2;
+    CHT_list(i) := 1.035 + 0.24 * (H(i)/100/0.6) - 0.275 * (H(i)/100/0.6)^2;
+    CST_list(i) := 0.34 + 0.856 * (S(i)/100/0.8) - 0.196 * (S(i)/100/0.8)^2;
+  END;
+  // Cultivo 1: Papa (Ejemplo de valores)
+  LOCAL Kc_Papa := {0.65, 0.67, 0.7, 0, 0, 0.12, 0.12, 0.38, 0.45, 0.26, 0, 0.22, 0.25};
+  LOCAL Area_Papa := 400; // Constante para este ejemplo en los meses activos
+  LOCAL Eficiencia := 0.5;
+  
+  LOCAL Uc_Papa := {};
+  LOCAL Q_Papa := {};
+  
+  PRINT();
+  PRINT("Calculando demanda para Papa...");
+  
+  FOR i FROM 1 TO 12 DO
+    IF Kc_Papa(i) > 0 THEN
+      // Uso consuntivo
+      Uc_Papa(i) := 0.324 * Kc_Papa(i) * Rt(i) * CTT_list(i) * CWT_list(i) * CHT_list(i) * CST_list(i) * CE;
+      // Requerimiento de riego
+      LOCAL Riego := (Uc_Papa(i) - Pef(i)) / Eficiencia;
+      // Caudal (m3/s)
+      Q_Papa(i) := (Riego * Area_Papa * 10) / (86400 * dias_mes(i));
+      
+      PRINT("Mes " + i + ": Q = " + ROUND(Q_Papa(i), 4) + " m3/s");
+    ELSE
+      Q_Papa(i) := 0;
+    END;
+  END;
+  
+  MSGBOX("Cálculo finalizado. Ver consola para resultados.");
+END;
