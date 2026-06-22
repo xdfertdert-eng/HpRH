@@ -1,238 +1,252 @@
-# UC CHAYPARA - Blaney-Criddle
-# HP Prime MicroPython
-# Cada linea max 40 chars
-# DATOS (4 valores por fila)
-M1=["Ene","Feb","Mar","Abr","May","Jun"]
-M2=["Jul","Ago","Set","Oct","Nov","Dic"]
-MESES=M1+M2
-T=[20.75,19.17,19.27,20.17]
-T+=[19.40,18.71,18.64,19.24]
-T+=[21.18,23.35,23.90,22.85]
-pp=[8.9778,7.9382,8.5424]
-pp+=[8.0466,8.0808,7.7298]
-pp+=[8.0222,8.1956,8.1576]
-pp+=[8.6572,8.6354,9.0164]
-P=[78.60,70.20,62.91,29.31]
-P+=[9.60,5.31,3.51,7.60]
-P+=[20.40,26.51,34.00,49.71]
-D=[31,28,31,30,31,30]
-D+=[31,31,30,31,30,31]
-AT=13.0
-E=0.5
-RD=0.60
-AC=AT/7
-NOM=["AjiCap","AjiPiq","Alfalfa"]
-NOM+=["Maiz","Arveja","Tomate","Mango"]
-EC=[1.0,0.5,0.5,0.5,0.5,0.5,0.5]
-K0=[0.95,0.90,0,0,0,0]
-K0+=[0,0,0,0.60,0.85,1.05]
-K1=[0.95,0.90,0,0,0,0]
-K1+=[0,0,0,0.60,0.85,1.05]
-K2=[0.40,0.40,0.40,0.40,0.40,0.70]
-K2+=[0.95,0.95,0.95,0.95,0.70,0.40]
-K3=[1.20,0.60,0.50,0.30,0.60,1.20]
-K3+=[1.20,0.70,0.30,0.30,0.70,1.10]
-K4=[0.70,0.30,0,0,0.30,0.70]
-K4+=[1.10,0.70,0.30,0.30,0.70,1.10]
-K5=[0.90,0.80,0,0,0.60,0.80]
-K5+=[1.50,0.90,0.80,0.60,0.80,1.15]
-K6=[0.90,0.90,0.90,0.95,1.0,1.05]
-K6+=[1.10,1.10,1.10,1.05,1.0,0.90]
-K=[K0,K1,K2,K3,K4,K5,K6]
-# CALCULOS
-def Pef(m):
-    return 0.75*P[m]
-def Uc(c,m):
-    v=K[c][m]*pp[m]
-    return v*(8.12+0.45*T[m])
-def DN(c,m):
-    v=Uc(c,m)-Pef(m)
-    return v/EC[c]
-def Qc(c,m):
-    v=DN(c,m)*AC*10.0
-    return v/(D[m]*86400.0)
-def Qt(m):
-    s=0.0
-    for c in range(7):
-        s+=Qc(c,m)
-    return s
-def Qr(m):
-    return Qt(m)/RD
-# FORMATO
-def rj(v,w):
-    s=str(v)
-    n=w-len(s)
-    if n>0:
-        s=" "*n+s
-    return s[:w]
-def lj(v,w):
-    s=str(v)
-    n=w-len(s)
-    if n>0:
-        s=s+" "*n
-    return s[:w]
-def flt(v,d):
-    f=round(v,d)
-    s=str(f)
-    if "." not in s:
-        s+="."+("0"*d)
-    else:
-        a=s.split(".")
-        b=(a[1]+("0"*d))[:d]
-        s=a[0]+"."+b
-    return s
-def sep():
-    print("-"*26)
-def pausa():
-    input("[Enter]...")
-# MENU
-def menu():
-    op=""
-    while op!="0":
-        print()
-        print("=== UC CHAYPARA ===")
-        print("1.Parametros")
-        print("2.Uc cultivo(mm)")
-        print("3.Demanda neta")
-        print("4.Caudal Q(lps)")
-        print("5.Resumen mensual")
-        print("6.Caudal max")
-        print("0.Salir")
-        sep()
-        op=input("Opcion:")
-        if op=="1":
-            v_param()
-        elif op=="2":
-            v_uc()
-        elif op=="3":
-            v_dn()
-        elif op=="4":
-            v_qc()
-        elif op=="5":
-            v_res()
-        elif op=="6":
-            v_qmax()
-    print("Fin.")
-def elegir():
-    print()
-    for i in range(7):
-        print(str(i+1)+"."+NOM[i])
-    c=input("Cultivo(1-7):")
-    ok=["1","2","3","4","5","6","7"]
-    if c in ok:
-        return int(c)-1
-    print("Invalido.")
-    return -1
-def v_param():
-    print()
-    print("PARAM CLIMATICOS")
-    sep()
-    print("Mes T(C)  P(mm)")
-    sep()
-    for m in range(12):
-        a=lj(MESES[m],4)
-        b=rj(flt(T[m],2),5)
-        c=rj(flt(P[m],1),6)
-        print(a+" "+b+" "+c)
-    sep()
-    s="Area:"+str(AT)+" Ha"
-    print(s)
-    s="E:"+str(int(E*100))+"%"
-    s+=" Rend:"+str(int(RD*100))+"%"
-    print(s)
-    pausa()
-def v_uc():
-    c=elegir()
-    if c<0:
-        return
-    print()
-    print("Uc-"+NOM[c]+" (mm)")
-    sep()
-    print("Mes  K    Uc(mm)")
-    sep()
-    for m in range(12):
-        a=lj(MESES[m],4)
-        b=rj(flt(K[c][m],2),4)
-        cv=rj(flt(Uc(c,m),2),7)
-        print(a+" "+b+" "+cv)
-    pausa()
-def v_dn():
-    c=elegir()
-    if c<0:
-        return
-    print()
-    print("DN-"+NOM[c]+" (mm)")
-    sep()
-    print("Mes  Pef   DN")
-    sep()
-    for m in range(12):
-        a=lj(MESES[m],4)
-        b=rj(flt(Pef(m),2),6)
-        cv=rj(flt(DN(c,m),2),7)
-        print(a+" "+b+" "+cv)
-    pausa()
-def v_qc():
-    c=elegir()
-    if c<0:
-        return
-    print()
-    print("Q-"+NOM[c]+" (lps)")
-    sep()
-    print("Mes   Q(lps)")
-    sep()
-    for m in range(12):
-        a=lj(MESES[m],4)
-        q=Qc(c,m)*1000
-        b=rj(flt(q,5),9)
-        print(a+"  "+b)
-    pausa()
-def v_res():
-    print()
-    print("RESUMEN MENSUAL")
-    sep()
-    print("Mes  Qbrut Qreq(lps)")
-    sep()
-    for m in range(12):
-        a=lj(MESES[m],4)
-        qt=Qt(m)*1000
-        qr=Qr(m)*1000
-        b=rj(flt(qt,2),6)
-        cv=rj(flt(qr,2),6)
-        mk=" "
-        if qr>0:
-            mk="*"
-        print(a+" "+b+" "+cv+mk)
-    sep()
-    print("*=estiaje")
-    pausa()
-def v_qmax():
-    Qmax=0.0
-    mm=0
-    for m in range(12):
-        qr=Qr(m)
-        if qr>Qmax:
-            Qmax=qr
-            mm=m
-    print()
-    print("CAUDAL MAX Y DISENO")
-    sep()
-    s="Qmax="+flt(Qmax,6)
-    print(s+" m3/s")
-    s="    ="+flt(Qmax*1000,3)
-    print(s+" lps")
-    print("Mes: "+MESES[mm])
-    sep()
-    print("Asumir Q=20 lps")
-    s="Irriga "+str(int(AT))+" Ha"
-    print(s)
-    sep()
-    print("Estiaje (Q>0):")
-    for m in range(12):
-        qr=Qr(m)
-        if qr>0:
-            s=" "+MESES[m]+": "
-            s+=flt(qr*1000,3)
-            s+=" lps"
-            print(s)
-    pausa()
-menu()
+// ============================================================
+//  REQUERIMIENTO DE AGUA - BLANEY-CRIDDLE
+//  Proyecto: SISTEMA DE RIEGO CHAYPARA
+//  HP Prime - HPPPL
+//  Autor: adaptado desde hoja de calculo
+// ============================================================
+//
+//  INSTRUCCIONES HP PRIME:
+//  1. Abrir app "Program Editor"
+//  2. Crear nuevo programa llamado "UC_CHAYPARA"
+//  3. Copiar y pegar este codigo
+//  4. Presionar [Shift][Eval] para compilar
+//  5. Ejecutar con [Start] o escribir UC_CHAYPARA() en CAS
+// ============================================================
+
+EXPORT UC_CHAYPARA()
+BEGIN
+
+// ---- PARAMETROS DE ENTRADA (modificar aqui) ----
+
+// Temperatura media mensual (C)
+LOCAL T:={20.75,19.17,19.27,20.17,19.40,18.71,
+           18.64,19.24,21.18,23.35,23.90,22.85};
+
+// Porcentaje horas de luz (latitud 13 08 51 S)
+LOCAL pL:={8.9778,7.9382,8.5424,8.0466,8.0808,7.7298,
+            8.0222,8.1956,8.1576,8.6572,8.6354,9.0164};
+
+// Precipitacion mensual (mm/mes)
+LOCAL Pp:={78.60,70.20,62.91,29.31,9.60,5.31,
+            3.51, 7.60,20.40,26.51,34.00,49.71};
+
+// Dias por mes
+LOCAL D:={31,28,31,30,31,30,31,31,30,31,30,31};
+
+// Parametros del sistema
+LOCAL At:=13.0;   // Area total Ha
+LOCAL Ec:=0.5;    // Eficiencia 50%
+LOCAL Rd:=0.60;   // Rendimiento 60%
+LOCAL ac:=At/7;   // Area por cultivo (Ha)
+
+// ---- COEFICIENTES Kc por cultivo (7 cultivos x 12 meses) ----
+// Filas: AjiCap, AjiPiq, Alfalfa, Maiz, Arveja, Tomate, Mango
+LOCAL Km:=
+{{0.95,0.90,0,0,0,0,0,0,0,0.60,0.85,1.05},
+ {0.95,0.90,0,0,0,0,0,0,0,0.60,0.85,1.05},
+ {0.40,0.40,0.40,0.40,0.40,0.70,0.95,0.95,0.95,0.95,0.70,0.40},
+ {1.20,0.60,0.50,0.30,0.60,1.20,1.20,0.70,0.30,0.30,0.70,1.10},
+ {0.70,0.30,0,0,0.30,0.70,1.10,0.70,0.30,0.30,0.70,1.10},
+ {0.90,0.80,0,0,0.60,0.80,1.50,0.90,0.80,0.60,0.80,1.15},
+ {0.90,0.90,0.90,0.95,1.00,1.05,1.10,1.10,1.10,1.05,1.00,0.90}};
+
+// Eficiencia por cultivo (AjiCaprika=1.0, resto=0.5)
+LOCAL Ec_c:={1.0,0.5,0.5,0.5,0.5,0.5,0.5};
+
+// Nombres de cultivos
+LOCAL nombres:={"AjiCap","AjiPiq","Alfalfa","Maiz",
+                "Arveja","Tomate","Mango"};
+
+// ---- VARIABLES DE TRABAJO ----
+LOCAL m,c,Uc,Pef,DN,Qc;
+LOCAL Qtot:={0,0,0,0,0,0,0,0,0,0,0,0};
+LOCAL Qreq:={0,0,0,0,0,0,0,0,0,0,0,0};
+LOCAL Qmat; // matriz resultados Uc [7x12]
+LOCAL DNmat;
+LOCAL Qcmat;
+LOCAL opcion,mes_sel,cult_sel;
+
+// Inicializar matrices resultado
+Qmat:=MAKEMAT(0,7,12);
+DNmat:=MAKEMAT(0,7,12);
+Qcmat:=MAKEMAT(0,7,12);
+
+// ============================================================
+// CALCULOS PRINCIPALES
+// ============================================================
+FOR c FROM 1 TO 7 DO
+  FOR m FROM 1 TO 12 DO
+    // Uc = K * p * (8.12 + 0.45*T)
+    Uc := Km(c,m) * pL(m) * (8.12 + 0.45*T(m));
+    // Pef = 0.75 * P
+    Pef := 0.75 * Pp(m);
+    // DN = (Uc - Pef) / E
+    DN := (Uc - Pef) / Ec_c(c);
+    // Q = DN * area * 10 / (dias * 86400)
+    Qc := DN * ac * 10 / (D(m) * 86400);
+    Qmat(c,m) := Uc;
+    DNmat(c,m) := DN;
+    Qcmat(c,m) := Qc;
+    Qtot(m) := Qtot(m) + Qc;
+  END; // m
+END; // c
+
+// Caudal requerido = Qtot / Rendimiento
+FOR m FROM 1 TO 12 DO
+  Qreq(m) := Qtot(m) / Rd;
+END;
+
+// ============================================================
+// MENU PRINCIPAL
+// ============================================================
+REPEAT
+  opcion := CHOOSE(opcion,
+    "UC CHAYPARA - MENU",
+    "1. Uc por cultivo (mm)",
+    "2. Demanda neta (mm)",
+    "3. Caudal Q por cultivo (m3/s)",
+    "4. Resumen total mensual",
+    "5. Caudal maximo",
+    "6. Ver parametros",
+    "0. Salir");
+
+  CASE
+    IF opcion==1 THEN MOSTRAR_UC(nombres,Qmat); END;
+    IF opcion==2 THEN MOSTRAR_DN(nombres,DNmat); END;
+    IF opcion==3 THEN MOSTRAR_QC(nombres,Qcmat); END;
+    IF opcion==4 THEN RESUMEN(Qtot,Qreq,At,Rd); END;
+    IF opcion==5 THEN QMAX(Qreq); END;
+    IF opcion==6 THEN PARAMETROS(T,Pp,pL,At,Ec,Rd); END;
+  END;
+
+UNTIL opcion==0 OR opcion==7;
+
+RETURN 0;
+END; // UC_CHAYPARA
+
+
+// ============================================================
+// SUB: Mostrar Uc por cultivo
+// ============================================================
+MOSTRAR_UC(nombres,Qmat)
+BEGIN
+  LOCAL c,m,opcion;
+  LOCAL meses:={"Ene","Feb","Mar","Abr","May","Jun",
+                "Jul","Ago","Set","Oct","Nov","Dic"};
+  opcion:=CHOOSE(opcion,"Uc (mm) - Cultivo",
+    "AjiCaprika","AjiPiquillo","Alfalfa",
+    "Maiz","Arveja","Tomate","Mango");
+  IF opcion==0 THEN RETURN; END;
+  c:=opcion;
+  LOCAL txt:="Uc "+nombres(c)+" (mm)\n";
+  FOR m FROM 1 TO 12 DO
+    txt:=txt+meses(m)+": "+STRING(ROUND(Qmat(c,m),2))+"\n";
+  END;
+  MSGBOX(txt);
+END;
+
+
+// ============================================================
+// SUB: Mostrar Demanda Neta por cultivo
+// ============================================================
+MOSTRAR_DN(nombres,DNmat)
+BEGIN
+  LOCAL c,m,opcion;
+  LOCAL meses:={"Ene","Feb","Mar","Abr","May","Jun",
+                "Jul","Ago","Set","Oct","Nov","Dic"};
+  opcion:=CHOOSE(opcion,"Dem. Neta - Cultivo",
+    "AjiCaprika","AjiPiquillo","Alfalfa",
+    "Maiz","Arveja","Tomate","Mango");
+  IF opcion==0 THEN RETURN; END;
+  c:=opcion;
+  LOCAL txt:="DN "+nombres(c)+" (mm)\n";
+  FOR m FROM 1 TO 12 DO
+    txt:=txt+meses(m)+": "+STRING(ROUND(DNmat(c,m),2))+"\n";
+  END;
+  MSGBOX(txt);
+END;
+
+
+// ============================================================
+// SUB: Mostrar Caudal Q por cultivo
+// ============================================================
+MOSTRAR_QC(nombres,Qcmat)
+BEGIN
+  LOCAL c,m,opcion;
+  LOCAL meses:={"Ene","Feb","Mar","Abr","May","Jun",
+                "Jul","Ago","Set","Oct","Nov","Dic"};
+  opcion:=CHOOSE(opcion,"Q (m3/s) - Cultivo",
+    "AjiCaprika","AjiPiquillo","Alfalfa",
+    "Maiz","Arveja","Tomate","Mango");
+  IF opcion==0 THEN RETURN; END;
+  c:=opcion;
+  LOCAL txt:="Q "+nombres(c)+" (m3/s)\n";
+  FOR m FROM 1 TO 12 DO
+    txt:=txt+meses(m)+": "+STRING(ROUND(Qcmat(c,m)*1000,4))+" lps\n";
+  END;
+  MSGBOX(txt);
+END;
+
+
+// ============================================================
+// SUB: Resumen total mensual
+// ============================================================
+RESUMEN(Qtot,Qreq,At,Rd)
+BEGIN
+  LOCAL m;
+  LOCAL meses:={"Ene","Feb","Mar","Abr","May","Jun",
+                "Jul","Ago","Set","Oct","Nov","Dic"};
+  LOCAL txt:="RESUMEN TOTAL\n";
+  txt:=txt+"Area: "+STRING(At)+" Ha  Rend:"+STRING(Rd*100)+"%\n\n";
+  txt:=txt+"Mes   Qbrut  Qreq (lps)\n";
+  FOR m FROM 1 TO 12 DO
+    txt:=txt+meses(m)+":"+STRING(ROUND(Qtot(m)*1000,2))+"  "+
+         STRING(ROUND(Qreq(m)*1000,2))+"\n";
+  END;
+  MSGBOX(txt);
+END;
+
+
+// ============================================================
+// SUB: Caudal maximo y diseno
+// ============================================================
+QMAX(Qreq)
+BEGIN
+  LOCAL m, Qmax:=0, mes_max:=1;
+  LOCAL meses:={"Ene","Feb","Mar","Abr","May","Jun",
+                "Jul","Ago","Set","Oct","Nov","Dic"};
+  FOR m FROM 1 TO 12 DO
+    IF Qreq(m) > Qmax THEN
+      Qmax:=Qreq(m);
+      mes_max:=m;
+    END;
+  END;
+  LOCAL txt:="CAUDAL MAXIMO\n\n";
+  txt:=txt+"Qmax = "+STRING(ROUND(Qmax,6))+" m3/s\n";
+  txt:=txt+"     = "+STRING(ROUND(Qmax*1000,3))+" lps\n";
+  txt:=txt+"Mes  : "+meses(mes_max)+"\n\n";
+  txt:=txt+"Asumir Q = 20 lps\n";
+  txt:=txt+"(irriga 13 Ha en estiaje)";
+  MSGBOX(txt);
+END;
+
+
+// ============================================================
+// SUB: Ver parametros actuales
+// ============================================================
+PARAMETROS(T,Pp,pL,At,Ec,Rd)
+BEGIN
+  LOCAL m;
+  LOCAL meses:={"Ene","Feb","Mar","Abr","May","Jun",
+                "Jul","Ago","Set","Oct","Nov","Dic"};
+  LOCAL txt:="PARAMETROS CLIMATICOS\n";
+  txt:=txt+"Mes   T(C) P(mm)  p(%)\n";
+  FOR m FROM 1 TO 12 DO
+    txt:=txt+meses(m)+" "+STRING(T(m))+" "+
+         STRING(ROUND(Pp(m),1))+" "+STRING(pL(m))+"\n";
+  END;
+  txt:=txt+"\nArea="+STRING(At)+" Ha";
+  txt:=txt+"  E="+STRING(Ec*100)+"%";
+  txt:=txt+"  Rend="+STRING(Rd*100)+"%";
+  MSGBOX(txt);
+END;
