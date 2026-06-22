@@ -1,83 +1,98 @@
 # ============================================================
 #  USO CONSUNTIVO - BLANEY-CRIDDLE
-#  PROYECTO: SISTEMA DE RIEGO CHAYPARA
-#  MicroPython - HP Prime G2
-# ============================================================
-#  INSTRUCCIONES HP PRIME:
-#  1. Abrir app "Python" en la HP Prime
-#  2. Crear nuevo script: "uc_chaypara"
-#  3. Pegar este codigo completo
-#  4. Presionar [Run] o [Shift+Run]
+#  MicroPython HP Prime G2 (Python 3.4)
+#  Proyecto: SISTEMA DE RIEGO CHAYPARA
 # ============================================================
 # ---- DATOS DE ENTRADA (modificar aqui) ----
 MESES = ["Ene","Feb","Mar","Abr","May","Jun",
          "Jul","Ago","Set","Oct","Nov","Dic"]
-T  = [20.75,19.17,19.27,20.17,19.40,18.71,
-      18.64,19.24,21.18,23.35,23.90,22.85]
-p  = [8.9778,7.9382,8.5424,8.0466,8.0808,7.7298,
+T = [20.75,19.17,19.27,20.17,19.40,18.71,
+     18.64,19.24,21.18,23.35,23.90,22.85]
+pp = [8.9778,7.9382,8.5424,8.0466,8.0808,7.7298,
       8.0222,8.1956,8.1576,8.6572,8.6354,9.0164]
-P  = [78.60,70.20,62.91,29.31,9.60,5.31,
-      3.51, 7.60,20.40,26.51,34.00,49.71]
-D  = [31,28,31,30,31,30,31,31,30,31,30,31]
-AT  = 13.0   # Area total (Ha)
-E   = 0.5    # Eficiencia riego
-RD  = 0.60   # Rendimiento sistema
-AC  = AT / 7 # Area por cultivo
-# Nombres de cultivos
+P = [78.60,70.20,62.91,29.31,9.60,5.31,
+     3.51, 7.60,20.40,26.51,34.00,49.71]
+D = [31,28,31,30,31,30,31,31,30,31,30,31]
+AT  = 13.0
+E   = 0.5
+RD  = 0.60
+AC  = AT / 7
 NOM = ["AjiCaprika","AjiPiquil","Alfalfa",
        "Maiz","Arveja","Tomate","Mango"]
-# Coeficientes K [cultivo][mes]  (7 x 12)
 K = [
-  [0.95,0.90,0,0,0,0,0,0,0,0.60,0.85,1.05],    # AjiCaprika
-  [0.95,0.90,0,0,0,0,0,0,0,0.60,0.85,1.05],    # AjiPiquillo
-  [0.40,0.40,0.40,0.40,0.40,0.70,0.95,0.95,0.95,0.95,0.70,0.40], # Alfalfa
-  [1.20,0.60,0.50,0.30,0.60,1.20,1.20,0.70,0.30,0.30,0.70,1.10], # Maiz
-  [0.70,0.30,0,0,0.30,0.70,1.10,0.70,0.30,0.30,0.70,1.10],       # Arveja
-  [0.90,0.80,0,0,0.60,0.80,1.50,0.90,0.80,0.60,0.80,1.15],       # Tomate
-  [0.90,0.90,0.90,0.95,1.0,1.05,1.10,1.10,1.10,1.05,1.0,0.90],  # Mango
+ [0.95,0.90,0,0,0,0,0,0,0,0.60,0.85,1.05],
+ [0.95,0.90,0,0,0,0,0,0,0,0.60,0.85,1.05],
+ [0.40,0.40,0.40,0.40,0.40,0.70,0.95,0.95,0.95,0.95,0.70,0.40],
+ [1.20,0.60,0.50,0.30,0.60,1.20,1.20,0.70,0.30,0.30,0.70,1.10],
+ [0.70,0.30,0,0,0.30,0.70,1.10,0.70,0.30,0.30,0.70,1.10],
+ [0.90,0.80,0,0,0.60,0.80,1.50,0.90,0.80,0.60,0.80,1.15],
+ [0.90,0.90,0.90,0.95,1.0,1.05,1.10,1.10,1.10,1.05,1.0,0.90],
 ]
-# Eficiencia por cultivo (AjiCaprika=1.0 igual al Excel)
 EC = [1.0,0.5,0.5,0.5,0.5,0.5,0.5]
-# ---- CALCULOS ----
-def calcular():
-    Pef  = [0.75 * P[m] for m in range(12)]
-    Uc   = [[0.0]*12 for _ in range(7)]
-    DN   = [[0.0]*12 for _ in range(7)]
-    Qc   = [[0.0]*12 for _ in range(7)]
-    Qt   = [0.0]*12
+# ---- FUNCIONES BASE ----
+def Pef(m):
+    return 0.75 * P[m]
+def calc_Uc(c, m):
+    return K[c][m] * pp[m] * (8.12 + 0.45 * T[m])
+def calc_DN(c, m):
+    return (calc_Uc(c, m) - Pef(m)) / EC[c]
+def calc_Q(c, m):
+    return calc_DN(c, m) * AC * 10.0 / (D[m] * 86400.0)
+def calc_Qt(m):
+    s = 0.0
     for c in range(7):
-        for m in range(12):
-            Uc[c][m] = K[c][m] * p[m] * (8.12 + 0.45*T[m])
-            DN[c][m] = (Uc[c][m] - Pef[m]) / EC[c]
-            Qc[c][m] = DN[c][m] * AC * 10 / (D[m] * 86400)
-            Qt[m]   += Qc[c][m]
-    Qreq = [Qt[m] / RD for m in range(12)]
-    return Pef, Uc, DN, Qc, Qt, Qreq
+        s += calc_Q(c, m)
+    return s
+def calc_Qreq(m):
+    return calc_Qt(m) / RD
+# ---- UTILIDADES DE FORMATO (sin str.format con ancho) ----
+def rj(val, w):
+    """Ajusta string a ancho w por la derecha."""
+    s = str(val)
+    if len(s) < w:
+        s = " " * (w - len(s)) + s
+    return s[:w]
+def lj(val, w):
+    """Ajusta string a ancho w por la izquierda."""
+    s = str(val)
+    if len(s) < w:
+        s = s + " " * (w - len(s))
+    return s[:w]
+def flt(v, dec):
+    """Redondea y convierte a string con 'dec' decimales."""
+    f = round(v, dec)
+    s = str(f)
+    # Asegurar que haya exactamente 'dec' decimales
+    if "." not in s:
+        s += "." + "0" * dec
+    else:
+        partes = s.split(".")
+        partes[1] = (partes[1] + "0" * dec)[:dec]
+        s = partes[0] + "." + partes[1]
+    return s
+def linea(w=34):
+    print("-" * w)
 def pausa():
-    input("  [Enter] continua...")
-def sep():
-    print("-" * 36)
-# ---- MENU ----
+    input("[Enter]...")
+# ---- MENU PRINCIPAL ----
 def menu():
     while True:
         print()
-        print("=" * 36)
-        print("  UC CHAYPARA - Blaney-Criddle")
-        print("=" * 36)
-        print("  1. Parametros climaticos")
-        print("  2. Uc por cultivo (mm)")
-        print("  3. Demanda neta (mm)")
-        print("  4. Caudal Q por cultivo (lps)")
-        print("  5. Resumen mensual")
-        print("  6. Caudal maximo / diseno")
-        print("  0. Salir")
-        sep()
-        op = input("  Opcion: ").strip()
+        print("=== UC CHAYPARA ===")
+        print("1.Param climaticos")
+        print("2.Uc cultivo (mm)")
+        print("3.Demanda neta(mm)")
+        print("4.Caudal Q (lps)")
+        print("5.Resumen mensual")
+        print("6.Caudal max/diseno")
+        print("0.Salir")
+        linea()
+        op = input("Opcion:")
         if op == "0":
-            print("  Fin del programa.")
+            print("Fin.")
             break
         elif op == "1":
-            ver_parametros()
+            ver_param()
         elif op == "2":
             ver_uc()
         elif op == "3":
@@ -89,112 +104,126 @@ def menu():
         elif op == "6":
             ver_qmax()
         else:
-            print("  Opcion no valida.")
-def ver_parametros():
-    print()
-    print("PARAMETROS CLIMATICOS")
-    sep()
-    print("{:4s} {:6s} {:6s} {:6s}".format("Mes","T(C)","P(mm)","p(%)"))
-    sep()
-    for m in range(12):
-        print("{:4s} {:6.2f} {:6.2f} {:6.4f}".format(
-            MESES[m], T[m], P[m], p[m]))
-    sep()
-    print("Area total : {} Ha".format(AT))
-    print("Eficiencia : {}%".format(int(E*100)))
-    print("Rendimiento: {}%".format(int(RD*100)))
-    pausa()
+            print("Invalido.")
 def elegir_cultivo():
     print()
-    print("CULTIVOS:")
-    for i,n in enumerate(NOM):
-        print("  {}. {}".format(i+1, n))
-    c = input("  Nro cultivo (1-7): ").strip()
+    for i in range(7):
+        print(str(i+1) + "." + NOM[i])
+    c = input("Cultivo(1-7):")
     try:
-        c = int(c) - 1
-        if 0 <= c <= 6:
-            return c
+        ci = int(c) - 1
+        if 0 <= ci <= 6:
+            return ci
     except:
         pass
-    print("  Opcion invalida.")
+    print("Invalido.")
     return -1
+def ver_param():
+    print()
+    print("PARAM CLIMATICOS")
+    linea()
+    print("Mes  T(C) P(mm)")
+    linea()
+    for m in range(12):
+        row = lj(MESES[m],4)
+        row += " " + rj(flt(T[m],2),5)
+        row += " " + rj(flt(P[m],1),6)
+        print(row)
+    linea()
+    print("Area: " + str(AT) + " Ha")
+    print("E: " + str(int(E*100)) + "%")
+    print("Rend: " + str(int(RD*100)) + "%")
+    pausa()
 def ver_uc():
-    _, Uc, _, _, _, _ = calcular()
     c = elegir_cultivo()
     if c < 0:
         return
     print()
-    print("Uc - {} (mm)".format(NOM[c]))
-    sep()
-    print("{:4s}  {:8s}  {:5s}".format("Mes","Uc(mm)","K"))
-    sep()
+    print("Uc-" + NOM[c] + " (mm)")
+    linea()
+    print("Mes  K     Uc")
+    linea()
     for m in range(12):
-        print("{:4s}  {:8.3f}  {:5.2f}".format(
-            MESES[m], Uc[c][m], K[c][m]))
+        uc = calc_Uc(c, m)
+        row = lj(MESES[m],4)
+        row += " " + rj(flt(K[c][m],2),5)
+        row += " " + rj(flt(uc,2),7)
+        print(row)
     pausa()
 def ver_dn():
-    Pef, _, DN, _, _, _ = calcular()
     c = elegir_cultivo()
     if c < 0:
         return
     print()
-    print("Dem.Neta - {} (mm)".format(NOM[c]))
-    sep()
-    print("{:4s} {:8s} {:8s}".format("Mes","Pef","DN"))
-    sep()
+    print("DN-" + NOM[c] + " (mm)")
+    linea()
+    print("Mes  Pef    DN")
+    linea()
     for m in range(12):
-        print("{:4s} {:8.3f} {:8.3f}".format(
-            MESES[m], Pef[m], DN[c][m]))
+        pf = Pef(m)
+        dn = calc_DN(c, m)
+        row = lj(MESES[m],4)
+        row += " " + rj(flt(pf,2),6)
+        row += " " + rj(flt(dn,2),7)
+        print(row)
     pausa()
 def ver_qc():
-    _, _, _, Qc, _, _ = calcular()
     c = elegir_cultivo()
     if c < 0:
         return
     print()
-    print("Q - {} (lps)".format(NOM[c]))
-    sep()
-    print("{:4s}  {:10s}".format("Mes","Q(lps)"))
-    sep()
+    print("Q-" + NOM[c] + " (lps)")
+    linea()
+    print("Mes   Q(lps)")
+    linea()
     for m in range(12):
-        print("{:4s}  {:10.5f}".format(MESES[m], Qc[c][m]*1000))
+        q = calc_Q(c, m) * 1000
+        row = lj(MESES[m],4)
+        row += "  " + rj(flt(q,5),9)
+        print(row)
     pausa()
 def ver_resumen():
-    _, _, _, _, Qt, Qreq = calcular()
     print()
     print("RESUMEN MENSUAL")
-    sep()
-    print("{:4s} {:8s} {:8s}".format("Mes","Qbrut","Qreq"))
-    print("{:4s} {:8s} {:8s}".format("","(lps)","(lps)"))
-    sep()
+    linea()
+    print("Mes  Qbrut  Qreq")
+    print("     (lps)  (lps)")
+    linea()
     for m in range(12):
-        marca = " *" if Qreq[m] > 0 else ""
-        print("{:4s} {:8.4f} {:8.4f}{}".format(
-            MESES[m], Qt[m]*1000, Qreq[m]*1000, marca))
-    sep()
-    print("  * = estiaje (demanda > 0)")
-    print("Area total: {} Ha".format(AT))
+        qt = calc_Qt(m) * 1000
+        qr = calc_Qreq(m) * 1000
+        marca = "*" if qr > 0 else " "
+        row = lj(MESES[m],4)
+        row += " " + rj(flt(qt,2),6)
+        row += " " + rj(flt(qr,2),6)
+        row += marca
+        print(row)
+    linea()
+    print("*=estiaje")
     pausa()
 def ver_qmax():
-    _, _, _, _, Qt, Qreq = calcular()
-    Qmax = max(Qreq)
-    mes_max = Qreq.index(Qmax)
-    print()
-    print("CAUDAL MAXIMO Y DISENO")
-    sep()
-    print("Qmax = {:.6f} m3/s".format(Qmax))
-    print("     = {:.3f} lps".format(Qmax*1000))
-    print("Mes  : {}".format(MESES[mes_max]))
-    sep()
-    print("Asumir Q = 20 lps")
-    print("Irriga {} Ha en estiaje".format(int(AT)))
-    sep()
-    # Mostrar todos los meses con demanda positiva
-    print("Meses de estiaje:")
+    Qmax = 0.0
+    mes_max = 0
     for m in range(12):
-        if Qreq[m] > 0:
-            print("  {} : {:.3f} lps".format(MESES[m], Qreq[m]*1000))
+        qr = calc_Qreq(m)
+        if qr > Qmax:
+            Qmax = qr
+            mes_max = m
+    print()
+    print("CAUDAL MAX Y DISENO")
+    linea()
+    print("Qmax=" + flt(Qmax,6) + " m3/s")
+    print("    =" + flt(Qmax*1000,3) + " lps")
+    print("Mes: " + MESES[mes_max])
+    linea()
+    print("Asumir Q=20 lps")
+    print("Irriga " + str(int(AT)) + " Ha")
+    linea()
+    print("Estiaje (Q>0):")
+    for m in range(12):
+        qr = calc_Qreq(m)
+        if qr > 0:
+            print(" " + MESES[m] + ": " + flt(qr*1000,3) + " lps")
     pausa()
 # ---- INICIO ----
 menu()
-
