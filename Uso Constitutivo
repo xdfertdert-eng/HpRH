@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+============================================================
+ REQUERIMIENTO DE AGUA - SISTEMA DE RIEGO CHAYPARA
+ Método de Blaney-Criddle
+ Fórmula: Uc = K * p * (8.12 + 0.45 * T)
+============================================================
+ Uso:  python3 uso_consuntivo.py
+ Para modificar datos: edita las secciones marcadas con
+ ======= DATOS DE ENTRADA (MODIFICABLES) =======
+============================================================
+"""
+# ============================================================
+# DATOS DE ENTRADA (MODIFICABLES)
+# ============================================================
+PROYECTO = "SISTEMA DE RIEGO CHAYPARA"
+LATITUD  = "13°08'51\" S"
+MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+         "Julio","Agosto","Setiembre","Octubre","Noviembre","Diciembre"]
+# Temperatura media mensual (°C)
+T = [20.75, 19.17, 19.27, 20.17, 19.40, 18.71,
+     18.64, 19.24, 21.18, 23.35, 23.90, 22.85]
+# Porcentaje de horas de luz mensual (según latitud)
+p = [8.9778, 7.9382, 8.5424, 8.0466, 8.0808, 7.7298,
+     8.0222, 8.1956, 8.1576, 8.6572, 8.6354, 9.0164]
+# Precipitación mensual (mm/mes)
+P = [78.60, 70.20, 62.9067, 29.3067,  9.60,  5.3067,
+      3.5067,  7.60, 20.40, 26.5067, 34.00, 49.7067]
+# Días por mes
+DIAS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+# Parámetros del sistema
+AREA_TOTAL   = 13.0   # Ha totales a irrigar
+EFICIENCIA   = 0.5    # E (eficiencia de riego, 50%)
+RENDIMIENTO  = 0.60   # Rendimiento del sistema (60%)
+Q_ASUMIDO_LPS = 20.0  # Caudal asumido en lps
+# ============================================================
+# CULTIVOS: nombre -> {K: [12 valores], E: eficiencia, area: Ha}
+# Nota: Aji Caprika usa E=1.0 tal como aparece en el Excel original
+#       (la fórmula de su celda es (Uc-Pef) sin dividir por 0.5)
+# ============================================================
+CULTIVOS = {
+    "Aji Caprika": {
+        "K": [0.95, 0.90, 0.00, 0.00, 0.00, 0.00,
+              0.00, 0.00, 0.00, 0.60, 0.85, 1.05],
+        "E": 1.0,                    # <- igual al Excel (ver nota arriba)
+        "area": AREA_TOTAL / 7,
+    },
+    "Aji Piquillo": {
+        "K": [0.95, 0.90, 0.00, 0.00, 0.00, 0.00,
+              0.00, 0.00, 0.00, 0.60, 0.85, 1.05],
+        "E": EFICIENCIA,
+        "area": AREA_TOTAL / 7,
+    },
+    "Alfalfa": {
+        "K": [0.40, 0.40, 0.40, 0.40, 0.40, 0.70,
+              0.95, 0.95, 0.95, 0.95, 0.70, 0.40],
+        "E": EFICIENCIA,
+        "area": AREA_TOTAL / 7,
+    },
+    "Maiz": {
+        "K": [1.20, 0.60, 0.50, 0.30, 0.60, 1.20,
+              1.20, 0.70, 0.30, 0.30, 0.70, 1.10],
+        "E": EFICIENCIA,
+        "area": AREA_TOTAL / 7,
+    },
+    "Arveja": {
+        "K": [0.70, 0.30, 0.00, 0.00, 0.30, 0.70,
+              1.10, 0.70, 0.30, 0.30, 0.70, 1.10],
+        "E": EFICIENCIA,
+        "area": AREA_TOTAL / 7,
+    },
+    "Tomate": {
+        "K": [0.90, 0.80, 0.00, 0.00, 0.60, 0.80,
+              1.50, 0.90, 0.80, 0.60, 0.80, 1.15],
+        "E": EFICIENCIA,
+        "area": AREA_TOTAL / 7,
+    },
+    "Mango": {
+        "K": [0.90, 0.90, 0.90, 0.95, 1.00, 1.05,
+              1.10, 1.10, 1.10, 1.05, 1.00, 0.90],
+        "E": EFICIENCIA,
+        "area": AREA_TOTAL / 7,
+    },
+}
+# ============================================================
+# FUNCIONES DE CÁLCULO  (NO modificar salvo revisión técnica)
+# ============================================================
+def uc(K_m, p_m, T_m):
+    """Uso Consuntivo mensual [mm]  —  Blaney-Criddle"""
+    return K_m * p_m * (8.12 + 0.45 * T_m)
+def pef(P_m):
+    """Precipitación efectiva mensual [mm]"""
+    return 0.75 * P_m
+def demanda_neta(Uc_m, Pef_m, E):
+    """Demanda neta [mm/mes]:  (Uc - Pef) / E"""
+    return (Uc_m - Pef_m) / E
+def caudal(DN_m, area_ha, dias_m):
+    """
+    Caudal [m³/s]
+    DN [mm/mes] * area [Ha] * 10 [m³/mm·Ha] / (dias * 86400 s/dia)
+    """
+    return DN_m * area_ha * 10.0 / (dias_m * 86400.0)
+def calcular():
+    """Ejecuta todos los cálculos y devuelve un dict con resultados."""
+    Pef = [pef(P[m]) for m in range(12)]
+    resultados = {}
+    Q_total = [0.0] * 12
+    for nombre, datos in CULTIVOS.items():
+        Uc_c  = [uc(datos["K"][m], p[m], T[m]) for m in range(12)]
+        DN_c  = [demanda_neta(Uc_c[m], Pef[m], datos["E"]) for m in range(12)]
+        Q_c   = [caudal(DN_c[m], datos["area"], DIAS[m]) for m in range(12)]
+        resultados[nombre] = {"Uc": Uc_c, "DN": DN_c, "Q": Q_c,
+                              "area": datos["area"]}
+        for m in range(12):
+            Q_total[m] += Q_c[m]
+    Q_rend   = [q * RENDIMIENTO for q in Q_total]
+    Q_req    = [q / RENDIMIENTO for q in Q_total]
+    area_tot = sum(d["area"] for d in CULTIVOS.values())
+    return resultados, Pef, Q_total, Q_rend, Q_req, area_tot
+# ============================================================
+# SALIDA POR CONSOLA
+# ============================================================
+W = 14   # ancho de columna mensual
+def hdr(titulo):
+    print()
+    print("=" * (2 + W * 12))
+    print(f"  {titulo}")
+    print("=" * (2 + W * 12))
+def fila_meses():
+    print(f"{'':20s}", end="")
+    for m in MESES:
+        print(f"{m:>{W}}", end="")
+    print()
+def fila(etiq, vals, fmt=".4f"):
+    print(f"{etiq:20s}", end="")
+    for v in vals:
+        print(f"{v:{W}{fmt}}", end="")
+    print()
+def mostrar_resultados():
+    res, Pef, Q_total, Q_rend, Q_req, area_tot = calcular()
+    # ---- SECCIÓN 1: Uso Consuntivo ----
+    hdr(f"CALCULO DE USO CONSUNTIVO EN mm  —  {PROYECTO}")
+    fila_meses()
+    fila("T (°C)",    T,   ".2f")
+    fila("p (% luz)", p,   ".4f")
+    fila("P (mm/mes)",P,   ".2f")
+    print()
+    print(f"{'Cultivo':20s}{'Variable':14s}", end="")
+    for m in MESES:
+        print(f"{m:>{W}}", end="")
+    print()
+    print("-" * (34 + W * 12))
+    for nombre, datos in res.items():
+        K = CULTIVOS[nombre]["K"]
+        fila(nombre,          K,          ".2f")
+        fila("  Uc (mm)",     datos["Uc"],".3f")
+    # ---- SECCIÓN 2: Caudal Requerido ----
+    hdr("CALCULO DE CAUDAL REQUERIDO")
+    fila_meses()
+    fila("Dias/mes",   DIAS,  ".0f")
+    fila("P (mm/mes)", P,     ".2f")
+    fila("Pef=0.75*P", Pef,   ".3f")
+    print()
+    print(f"{'Cultivo':20s}{'Variable':18s}", end="")
+    for m in MESES:
+        print(f"{m:>{W}}", end="")
+    print()
+    print("-" * (38 + W * 12))
+    for nombre, datos in res.items():
+        E_txt = "/1.0" if CULTIVOS[nombre]["E"] == 1.0 else f"/{CULTIVOS[nombre]['E']}"
+        fila(nombre,              datos["Uc"],  ".3f")
+        fila(f"  (Uc-Pef){E_txt}", datos["DN"],  ".3f")
+        fila("  Area (Ha)",       [datos["area"]]*12, ".4f")
+        fila("  Q (m³/s)",        datos["Q"],   ".6f")
+    # ---- RESUMEN ----
+    hdr("RESUMEN")
+    fila_meses()
+    fila("Demanda Bruta (m³/s)", Q_total, ".6f")
+    fila("Rend. 60%  (m³/s)",   Q_rend,  ".6f")
+    fila("Area total (Ha)",      [area_tot]*12, ".3f")
+    print()
+    fila("Caudal req. (m³/s)",  Q_req,   ".6f")
+    # Identificar meses de estiaje (Q_req > 0)
+    estiaje = [MESES[m] for m in range(12) if Q_req[m] > 0]
+    print(f"\n  Meses de estiaje: {', '.join(estiaje)}")
+    Q_max = max(Q_req)
+    Q_max_lps = Q_max * 1000.0
+    print(f"\n  Caudal máximo requerido : {Q_max:.6f} m³/s  =  {Q_max_lps:.2f} lps")
+    print(f"  Caudal asumido diseño   : {Q_ASUMIDO_LPS/1000:.3f} m³/s  =  {Q_ASUMIDO_LPS:.1f} lps")
+    print(f"  Area total irrigada     : {area_tot:.2f} Ha")
+    print()
+    print(f"  El caudal asumido puede irrigar en buenas condiciones {area_tot:.0f} Has")
+    print()
+if __name__ == "__main__":
+    mostrar_resultados()
